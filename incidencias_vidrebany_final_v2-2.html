@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Incidencias Vidrebany</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{--bg:#f3f4f7;--card:#fff;--text:#111;--blue:#1769ff;--soft:#edf1f9}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+header{background:#111;color:#fff;text-align:center;padding:26px 12px;font-size:30px;font-weight:700;position:sticky;top:0;z-index:10;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+.wrap{max-width:680px;margin:46px auto;padding:0 22px 40px}
+.card{background:var(--card);border-radius:24px;padding:24px;margin:0 0 24px;box-shadow:0 8px 28px rgba(0,0,0,.08);border:1px solid rgba(0,0,0,.04)}
+.top-actions,.report-actions{display:flex;gap:14px;overflow-x:auto;padding-bottom:12px}
+button{border:0;border-radius:17px;background:var(--soft);color:#111;padding:17px 22px;font-size:20px;cursor:pointer;white-space:nowrap}
+.btn-blue{background:var(--blue);color:#fff;width:100%;margin-top:18px;font-weight:700}
+.btn-clear{width:100%;margin-top:18px}.btn-main{width:100%;margin-top:18px;font-weight:700;font-size:24px;padding:22px}
+label{display:block;margin:18px 0 9px;font-size:20px;font-weight:700;color:#333}
+input,select,textarea{width:100%;border:1px solid #d9dde5;border-radius:17px;padding:18px 22px;font-size:25px;background:#fff;color:#111;outline:none}
+textarea{min-height:112px;resize:vertical;font-family:monospace}
+.help{color:#888;margin-top:12px;font-size:20px;line-height:1.25}
+#fotos{padding:18px 22px;font-size:21px}.thumb-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.thumb{width:92px;height:92px;object-fit:cover;border-radius:12px;border:1px solid #ddd}
+.empty{text-align:center;color:#777;font-size:24px;padding:28px 10px}.inc{border-top:1px solid #e7e9ee;padding:18px 0}.inc:first-child{border-top:0}
+.inc-title{font-weight:700;font-size:20px;margin-bottom:6px}.inc-meta{color:#555;font-size:18px;line-height:1.35}
+.inc img{max-width:120px;max-height:120px;object-fit:cover;border-radius:12px;margin:10px 8px 0 0;border:1px solid #ddd}
+.screen{display:none}.screen.active{display:block}.home-title{text-align:center;font-size:34px;font-weight:800;margin:10px 0 6px}
+.home-subtitle{text-align:center;color:#777;font-size:20px;line-height:1.3;margin-bottom:26px}
+.inc-select-row{display:flex;gap:12px;align-items:flex-start}.inc-check{width:28px;height:28px;min-width:28px;margin-top:2px}.inc-content{flex:1}
+.selected-box{background:#fff;border-radius:17px;padding:14px 18px;margin-top:12px;color:#555;font-size:18px}
+</style>
+</head>
+<body>
+<header id="tituloHeader">Incidencias Vidrebany</header>
+<div class="wrap">
+<section id="pantallaInicio" class="screen active">
+  <div class="card home-card">
+    <div class="home-title">Incidencias</div>
+    <div class="home-subtitle">Gestión de incidencias Vidrebany</div>
+    <button class="btn-blue btn-main" onclick="irA('pantallaIncidencia')">Nueva incidencia</button>
+    <button class="btn-main" onclick="irA('pantallaReportadas')">Incidencias reportadas</button>
+    <div class="help">Crea incidencias con fotos y luego consúltalas desde “Incidencias reportadas” para exportarlas a PDF tipo albarán.</div>
+  </div>
+</section>
+
+<section id="pantallaIncidencia" class="screen">
+  <section class="card form-card">
+    <div class="top-actions">
+      <button onclick="generarPDFSeleccionadas()">PDF / Imprimir</button>
+      <button onclick="exportarCopia()">Exportar copia</button>
+      <button onclick="document.getElementById('importar').click()">Importar</button>
+      <button onclick="irA('pantallaInicio')">Inicio</button>
+      <input id="importar" type="file" accept="application/json" style="display:none" onchange="importarCopia(event)">
+    </div>
+    <label>Fecha</label><input id="fecha" type="date">
+    <label>Pedido</label><input id="pedido" type="text" placeholder="Ej: 861 / cliente">
+    <label>Nombre del cliente</label><input id="cliente" type="text" placeholder="Cliente"><label>Quién trae la incidencia</label><input id="responsable" type="text" placeholder="Ej: Kevin">
+    <label>Descripción del producto</label><input id="producto" type="text" placeholder="Lavabo, mueble, espejo...">
+    <label>Unidades</label><input id="unidades" type="number" min="1" value="1">
+    <label>Tipo de incidencia</label>
+    <select id="tipo"><option>Roto</option><option>Golpeado</option><option>Falta material</option><option>Error medida</option><option>Error color</option><option>No recibido</option><option>Otro</option></select>
+    <label>Trabajo a realizar</label>
+    <select id="trabajo"><option>Revisar</option><option>Cambiar</option><option>Reparar</option><option>Enviar por agencia</option><option>Fabricar de nuevo</option><option>Abonar</option><option>Otro</option></select>
+    <label>Descripción / solución</label>
+    <textarea id="descripcion" placeholder="Ej: cortar 10-15 cm, enviar soportes por Nacex..."></textarea>
+    <label>Fotos</label><input id="fotos" type="file" accept="image/*" multiple><div id="preview" class="thumb-row"></div>
+    <button class="btn-blue" onclick="guardarIncidencia()">Guardar incidencia</button>
+    <button class="btn-clear" onclick="limpiarFormulario()">Limpiar formulario</button>
+    <button class="btn-clear" onclick="irA('pantallaReportadas')">Incidencias reportadas</button>
+  </section>
+</section>
+
+<section id="pantallaReportadas" class="screen">
+  <section class="card search-card">
+    <div class="report-actions">
+      <button onclick="generarPDFSeleccionadas()">PDF seleccionadas</button>
+      <button onclick="seleccionarTodas()">Seleccionar todas</button>
+      <button onclick="limpiarSeleccion()">Quitar selección</button>
+      <button onclick="exportarCopia()">Exportar copia</button>
+      <button onclick="document.getElementById('importarReportadas').click()">Importar</button>
+      <button onclick="irA('pantallaIncidencia')">Nueva incidencia</button>
+      <button onclick="irA('pantallaInicio')">Inicio</button>
+      <input id="importarReportadas" type="file" accept="application/json" style="display:none" onchange="importarCopia(event)">
+    </div>
+    <div class="selected-box" id="contadorSeleccion">0 incidencias seleccionadas</div>
+    <label>Buscar / filtrar</label>
+    <input id="buscar" type="text" placeholder="Cliente, pedido, tipo, producto..." oninput="pintar()">
+  </section>
+  <section class="card"><div id="listaReportadas"></div></section>
+</section>
+</div>
+
+<script>
+let incidencias = JSON.parse(localStorage.getItem("incidencias_vidrebany") || "[]");
+let seleccionadas = [];
+
+function irA(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  tituloHeader.textContent = id==="pantallaInicio" ? "Incidencias Vidrebany" : id==="pantallaIncidencia" ? "Nueva incidencia" : "Incidencias reportadas";
+  if(id==="pantallaReportadas") pintar();
+  window.scrollTo(0,0);
+}
+function hoy(){const d=new Date();fecha.value=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,'0')+"-"+String(d.getDate()).padStart(2,'0')} hoy();
+fotos.addEventListener("change",async function(){preview.innerHTML="";for(const file of this.files){const src=await leerArchivo(file);const img=document.createElement("img");img.src=src;img.className="thumb";preview.appendChild(img)}});
+function leerArchivo(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=e=>resolve(e.target.result);r.onerror=reject;r.readAsDataURL(file)})}
+async function guardarIncidencia(){
+  const fs=Array.from(fotos.files||[]), fotosGuardadas=[];
+  for(const f of fs) fotosGuardadas.push(await leerArchivo(f));
+  
+let contadorAnual = JSON.parse(localStorage.getItem("contador_anual") || "{}");
+let year = new Date().getFullYear();
+if(!contadorAnual[year]) contadorAnual[year] = 0;
+contadorAnual[year]++;
+localStorage.setItem("contador_anual", JSON.stringify(contadorAnual));
+let numero = year + "-" + String(contadorAnual[year]).padStart(3,"0");
+
+incidencias.push({ numero: numero,id:Date.now()+"_"+Math.random().toString(16).slice(2),fecha:fecha.value,pedido:pedido.value.trim(),cliente:cliente.value.trim(),responsable:responsable.value.trim(),producto:producto.value.trim(),unidades:unidades.value,tipo:tipo.value,trabajo:trabajo.value,descripcion:descripcion.value.trim(),fotos:fotosGuardadas,creada:new Date().toISOString()});
+  localStorage.setItem("incidencias_vidrebany",JSON.stringify(incidencias)); limpiarFormulario(); alert("Incidencia guardada en incidencias reportadas");
+}
+function limpiarFormulario(){pedido.value="";cliente.value=""; responsable.value="";producto.value="";unidades.value=1;tipo.value="Roto";trabajo.value="Revisar";descripcion.value="";fotos.value="";preview.innerHTML="";hoy()}
+function idDe(d,i){if(!d.id)d.id="old_"+i+"_"+(d.creada||"");return d.id}
+function toggleSeleccion(id){seleccionadas=seleccionadas.includes(id)?seleccionadas.filter(x=>x!==id):seleccionadas.concat(id);pintar()}
+function actualizarContador(){if(contadorSeleccion)contadorSeleccion.textContent=seleccionadas.length+(seleccionadas.length===1?" incidencia seleccionada":" incidencias seleccionadas")}
+function seleccionarTodas(){const q=(buscar.value||"").toLowerCase();seleccionadas=incidencias.map((d,i)=>({d,id:idDe(d,i)})).filter(o=>[o.d.fecha,o.d.pedido,o.d.cliente,o.d.producto,o.d.tipo,o.d.trabajo,o.d.descripcion].join(" ").toLowerCase().includes(q)).map(o=>o.id);localStorage.setItem("incidencias_vidrebany",JSON.stringify(incidencias));pintar()}
+function limpiarSeleccion(){seleccionadas=[];pintar()}
+function borrar(i){if(confirm("¿Borrar esta incidencia reportada?")){const id=idDe(incidencias[i],i);incidencias.splice(i,1);seleccionadas=seleccionadas.filter(x=>x!==id);localStorage.setItem("incidencias_vidrebany",JSON.stringify(incidencias));pintar()}}
+function pintar(){
+  const q=(buscar.value||"").toLowerCase(), lista=document.getElementById("listaReportadas");
+  const filtradas=incidencias.map((d,i)=>({d,i,id:idDe(d,i)})).filter(o=>[o.d.fecha,o.d.pedido,o.d.cliente,o.d.producto,o.d.tipo,o.d.trabajo,o.d.descripcion].join(" ").toLowerCase().includes(q));
+  localStorage.setItem("incidencias_vidrebany",JSON.stringify(incidencias));actualizarContador();
+  if(!filtradas.length){lista.innerHTML='<div class="empty">No hay incidencias reportadas</div>';return}
+  lista.innerHTML=filtradas.map(o=>{const d=o.d, checked=seleccionadas.includes(o.id)?"checked":"", imgs=(d.fotos||[]).map(f=>'<img src="'+f+'">').join("");return `<div class="inc"><div class="inc-select-row"><input class="inc-check" type="checkbox" ${checked} onchange="toggleSeleccion('${o.id}')"><div class="inc-content"><div class="inc-title">${d.fecha||""} · ${d.cliente||"Sin cliente"}</div><div class="inc-meta"><b>Pedido:</b> ${d.pedido||"-"}<br><b>Traído por:</b> ${d.responsable||"-"}<br><b>Producto:</b> ${d.producto||"-"} · <b>Unidades:</b> ${d.unidades||"1"}<br><b>Tipo:</b> ${d.tipo||"-"} · <b>Trabajo:</b> ${d.trabajo||"-"}<br><b>Descripción / solución:</b> ${d.descripcion||"-"}</div><div>${imgs}</div><button style="margin-top:12px" onclick="borrar(${o.i})">Borrar</button></div></div></div>`}).join("");
+}
+function txt(doc,t,x,y,w,h){const l=doc.splitTextToSize(t||"-",w);doc.text(l,x,y);return y+l.length*h}
+function celda(doc,x,y,w,h,t,bold=false,center=false){
+  doc.rect(x,y,w,h);
+  doc.setFont("helvetica",bold?"bold":"normal");
+  const lineas=doc.splitTextToSize(String(t||""),w-3);
+  if(center) doc.text(lineas,x+w/2,y+5,{align:"center"});
+  else doc.text(lineas,x+2,y+5);
+}
+function fechaES(f){if(!f)return ""; const p=f.split("-"); return p.length===3?p[2]+"/"+p[1]+"/"+p[0]:f}
+async function generarPDFSeleccionadas(){
+  if(!window.jspdf){alert("Abre la app con conexión a internet para cargar el generador PDF.");return}
+  let datos=incidencias.map((d,i)=>({d,i,id:idDe(d,i)}));
+  if(seleccionadas.length>0) datos=datos.filter(o=>seleccionadas.includes(o.id));
+  else if(!confirm("No has seleccionado ninguna. ¿Quieres descargar todas en PDF?")) return;
+  if(!datos.length){alert("No hay incidencias para exportar.");return}
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF("p","mm","a4");
+  datos.forEach((o,idx)=>{
+    if(idx>0) doc.addPage();
+    const d=o.d;
+    doc.setFont("helvetica","bold"); doc.setFontSize(32); doc.text("VB",12,18);
+    doc.setFontSize(6); doc.text("VIDREBANY, S.L.",12,23); doc.setFont("helvetica","normal");
+    doc.text("CIF: B63358824",12,27); doc.text("C/ ARTESANS, 5-6 POL. COMPTE SERT",12,31); doc.text("08755 - CASTELLBISBAL - BARCELONA",12,35);
+    doc.text("www.vidrebany.com",126,15);
+    doc.setFont("helvetica","bold"); doc.setFontSize(15); doc.text("ALBARÁN INCIDENCIA Nº " + (d.numero || ""),105,29,{align:"center"});
+    let y=34;
+    doc.setFontSize(8);
+    celda(doc,74,y,20,8,"SERIE",true,true); celda(doc,94,y,22,8,"NÚMERO",true,true); celda(doc,116,y,26,8,"FECHA",true,true); celda(doc,142,y,28,8,"ENTREGA",true,true); celda(doc,170,y,28,8,"CLIENTE",true,true);
+    y+=8; celda(doc,74,y,20,8,"INC",false,true); celda(doc,94,y,22,8,d.pedido||"",false,true); celda(doc,116,y,26,8,fechaES(d.fecha),false,true); celda(doc,142,y,28,8,"Orientativa",false,true); celda(doc,170,y,28,8,d.cliente||"",false,true);
+    y=55;
+    celda(doc,12,y,82,34,"CLIENTE:\n"+(d.cliente||"-")+"\nPedido: "+(d.pedido||"-")+"\nTraído por: "+(d.responsable||"-"),true,false);
+    celda(doc,105,y,93,34,"CLIENTE:\n"+(d.cliente||"-")+"\nPedido: "+(d.pedido||"-")+"\nTraído por: "+(d.responsable||"-"),true,false);
+    y=98;
+    celda(doc,12,y,114,8,"DESCRIPCIÓN",true,true); celda(doc,126,y,22,8,"UDS",true,true); celda(doc,148,y,50,8,"INCIDENCIA / TRABAJO",true,true);
+    y+=8;
+    const desc=(d.producto||"-")+"\n"+(d.descripcion||"");
+    doc.rect(12,y,114,48); doc.rect(126,y,22,48); doc.rect(148,y,50,48);
+    doc.setFont("helvetica","normal"); doc.setFontSize(9);
+    doc.text(doc.splitTextToSize(desc,110),14,y+6);
+    doc.text(String(d.unidades||"1"),137,y+6,{align:"center"});
+    doc.text(doc.splitTextToSize((d.tipo||"-")+" / "+(d.trabajo||"-"),46),150,y+6);
+    y+=58;
+    doc.setFont("helvetica","bold"); doc.setFontSize(10); doc.text("FOTOS",12,y); y+=4;
+    const fotos=d.fotos||[];
+    let x=12;
+    for(let i=0;i<fotos.length;i++){
+      if(y>230){doc.addPage();y=16;x=12}
+      try{doc.addImage(fotos[i],"JPEG",x,y,55,42)}catch(e){try{doc.addImage(fotos[i],"PNG",x,y,55,42)}catch(err){}}
+      x+=62;
+      if(x>145){x=12;y+=48}
+    }
+    doc.setFont("helvetica","normal"); doc.setFontSize(8);
+    doc.text("FORMA DE PAGO:",126,279); doc.text("DÍA FIJO:",126,284);
+  });
+  let nombre = (datos.length==1 ? (datos[0].d.pedido || "incidencia") : "incidencias");
+doc.save(nombre + ".pdf");
+}
+function exportarCopia(){const blob=new Blob([JSON.stringify(incidencias,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="incidencias_vidrebany_copia.json";a.click()}
+function importarCopia(event){const file=event.target.files[0];if(!file)return;const r=new FileReader();r.onload=e=>{try{const data=JSON.parse(e.target.result);if(Array.isArray(data)){incidencias=data;incidencias.forEach((d,i)=>idDe(d,i));seleccionadas=[];localStorage.setItem("incidencias_vidrebany",JSON.stringify(incidencias));pintar();alert("Copia importada correctamente");irA("pantallaReportadas")}}catch(err){alert("Archivo no válido")}};r.readAsText(file)}
+pintar();
+</script>
+</body>
+</html>
